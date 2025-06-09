@@ -1,5 +1,3 @@
-package projeto;
-
 import java.awt.EventQueue;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -11,11 +9,16 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.Timer;
+import javax.swing.SwingConstants;
+import javax.swing.BorderFactory;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.awt.event.ActionEvent;
@@ -29,7 +32,8 @@ public class TelaJogo {
 
     private JFrame frmJogoDaVelha;
     private JogoDaVelha jogo;
-    private JButton[] botoesTabuleiro = new JButton[9];
+    // ALTERAÇÃO: Trocando JButton por JLabel para seguir o requisito.
+    private JLabel[] labelsTabuleiro = new JLabel[9];
     private JComboBox<String> comboBoxSimboloP1;
     private JComboBox<String> comboBoxSimboloP2;
     private JComboBox<String> comboBoxModoJogo;
@@ -40,6 +44,7 @@ public class TelaJogo {
     private JLabel lblJogadas;
 
     private List<String> historicoResultadosPartidas = new ArrayList<>();
+    private boolean isMaquinaJogando = false; // Flag para bloquear cliques durante a vez da máquina
 
     /**
      * Ponto de entrada principal para a aplicação do Jogo da Velha.
@@ -104,12 +109,23 @@ public class TelaJogo {
         frmJogoDaVelha.getContentPane().add(painelControles, BorderLayout.NORTH);
 
         JPanel painelTabuleiro = new JPanel(new GridLayout(3, 3, 5, 5));
+        // ALTERAÇÃO: Inicializando os JLabels do tabuleiro
         for (int i = 0; i < 9; i++) {
-            botoesTabuleiro[i] = new JButton("");
-            botoesTabuleiro[i].setFont(new Font("Arial", Font.BOLD, 40));
+            labelsTabuleiro[i] = new JLabel("", SwingConstants.CENTER); // Centraliza o texto
+            labelsTabuleiro[i].setFont(new Font("Arial", Font.BOLD, 40));
+            labelsTabuleiro[i].setOpaque(true); // Necessário para a cor de fundo aparecer
+            labelsTabuleiro[i].setBackground(Color.WHITE);
+            labelsTabuleiro[i].setBorder(BorderFactory.createLineBorder(Color.GRAY)); // Borda para delinear as células
+            
             final int posicao = i;
-            botoesTabuleiro[i].addActionListener(e -> botaoTabuleiroClicado(posicao));
-            painelTabuleiro.add(botoesTabuleiro[i]);
+            // ALTERAÇÃO: Usando MouseListener para capturar cliques nos JLabels
+            labelsTabuleiro[i].addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    labelTabuleiroClicado(posicao);
+                }
+            });
+            painelTabuleiro.add(labelsTabuleiro[i]);
         }
         frmJogoDaVelha.getContentPane().add(painelTabuleiro, BorderLayout.CENTER);
 
@@ -147,9 +163,10 @@ public class TelaJogo {
      * ou após o término de uma partida.
      */
     private void configurarEstadoInicialControles() {
-        for (JButton btn : botoesTabuleiro) {
-            btn.setEnabled(false);
-            btn.setText("");
+        // ALTERAÇÃO: Limpando o texto dos JLabels
+        for (JLabel lbl : labelsTabuleiro) {
+            lbl.setText("");
+            lbl.setBackground(Color.WHITE);
         }
         comboBoxSimboloP1.setEnabled(true);
         comboBoxModoJogo.setEnabled(true);
@@ -168,22 +185,11 @@ public class TelaJogo {
         boolean modoVsJogador = "Jogador vs Jogador".equals(modoSelecionado);
         
         comboBoxSimboloP2.setEnabled(modoVsJogador);
-        
-        if ("Jogador vs Máquina".equals(modoSelecionado)) {
-            comboBoxNivelMaquina.setEnabled(true);
-            if (comboBoxNivelMaquina.getItemCount() > 0) {
-                comboBoxNivelMaquina.setSelectedItem("Fácil (1)");
-            }
-        } else {
-            comboBoxNivelMaquina.setEnabled(false);
-        }
+        comboBoxNivelMaquina.setEnabled(!modoVsJogador);
     }
     
     /**
      * Define a ação a ser executada ao clicar no botão "Iniciar Jogo" ou "Reiniciar Jogo".
-     * Configura uma nova instância do jogo com base nas seleções do usuário
-     * (símbolos, modo de jogo, nível da máquina) e prepara a interface para o início da partida.
-     * Trata exceções de configuração, como símbolos iguais para P1 e P2.
      */
     private void acaoIniciarReiniciarJogo() {
         try {
@@ -218,13 +224,10 @@ public class TelaJogo {
 
     /**
      * Configura a interface para o estado de "jogo em andamento".
-     * Habilita os botões do tabuleiro e desabilita os controles de configuração do jogo.
-     * Altera o texto do botão principal para "Reiniciar Jogo".
      */
     private void configurarParaJogoEmAndamento() {
-        for (JButton btn : botoesTabuleiro) {
-            btn.setEnabled(true);
-            btn.setText("");
+        for (JLabel lbl : labelsTabuleiro) {
+            lbl.setText(""); // Garante que o tabuleiro está limpo
         }
         comboBoxSimboloP1.setEnabled(false);
         comboBoxSimboloP2.setEnabled(false);
@@ -234,13 +237,11 @@ public class TelaJogo {
     }
 
     /**
-     * Trata o evento de clique em um dos botões do tabuleiro.
-     * Se a jogada for válida, registra-a no objeto {@link JogoDaVelha} e atualiza a interface.
-     * Se for a vez da máquina jogar em um modo "Jogador vs Máquina", invoca a jogada da máquina.
-     * @param posicao A posição (0-8) do botão clicado no tabuleiro.
+     * ALTERAÇÃO: Método para tratar clique no JLabel.
      */
-    private void botaoTabuleiroClicado(int posicao) {
-        if (jogo == null || jogo.terminou() || (botoesTabuleiro[posicao].getText() != null && !botoesTabuleiro[posicao].getText().isEmpty()) ) {
+    private void labelTabuleiroClicado(int posicao) {
+        // Não permite clique se o jogo não iniciou, terminou, a célula está ocupada ou é a vez da máquina
+        if (jogo == null || jogo.terminou() || isMaquinaJogando || !labelsTabuleiro[posicao].getText().isEmpty()) {
             return;
         }
 
@@ -259,21 +260,16 @@ public class TelaJogo {
     }
     
     /**
-     * Controla a jogada da máquina no modo "Jogador vs Máquina".
-     * Introduz um pequeno atraso (delay) para simular o "pensamento" da máquina
-     * antes de efetuar a jogada. Atualiza a interface após a jogada.
-     * Desabilita o tabuleiro durante o "pensamento" da máquina.
+     * Controla a jogada da máquina.
      */
     private void fazerJogadaMaquina() {
         if (jogo == null || jogo.terminou() || !jogo.isModoVsMaquina() || jogo.getJogadorAtual() != 2) {
             return;
         }
 
+        isMaquinaJogando = true; // Bloqueia cliques do usuário
         lblStatus.setText("Máquina (" + jogo.getSimbolo(2) + ") está pensando...");
-        for (JButton btn : botoesTabuleiro) {
-            btn.setEnabled(false);
-        }
-
+        
         int delay = 1000; // 1 segundo
         Timer timer = new Timer(delay, new ActionListener() {
             @Override
@@ -283,6 +279,7 @@ public class TelaJogo {
                 } catch (IllegalStateException | IllegalArgumentException ex) {
                     JOptionPane.showMessageDialog(frmJogoDaVelha, "Erro na jogada da máquina: " + ex.getMessage(), "Erro Máquina", JOptionPane.ERROR_MESSAGE);
                 } finally {
+                    isMaquinaJogando = false; // Desbloqueia cliques
                     atualizarInterface();
                 }
             }
@@ -293,9 +290,6 @@ public class TelaJogo {
 
     /**
      * Atualiza todos os componentes da interface gráfica para refletir o estado atual do jogo.
-     * Isso inclui os textos nos botões do tabuleiro, o status do jogo (vez do jogador, vencedor, empate),
-     * a contagem de jogadas e a habilitação/desabilitação de controles.
-     * Se o jogo terminar, adiciona o resultado ao histórico de partidas.
      */
     private void atualizarInterface() {
         if (jogo == null) {
@@ -303,10 +297,10 @@ public class TelaJogo {
             return;
         }
 
+        // ALTERAÇÃO: Atualizando o texto dos JLabels
         String[] celulas = jogo.getCelulas();
         for (int i = 0; i < 9; i++) {
-            botoesTabuleiro[i].setText(celulas[i] == null ? "" : celulas[i]);
-            botoesTabuleiro[i].setEnabled((celulas[i] == null || celulas[i].isEmpty()) && !jogo.terminou());
+            labelsTabuleiro[i].setText(celulas[i] == null ? "" : celulas[i]);
         }
 
         lblJogadas.setText("Jogadas: " + jogo.getQuantidadeJogadas());
@@ -327,19 +321,23 @@ public class TelaJogo {
                 historicoResultadosPartidas.add(statusFinal + " (Jogadas: " + jogo.getQuantidadeJogadas() + ")");
             }
             
-            comboBoxSimboloP1.setEnabled(true);
-            comboBoxModoJogo.setEnabled(true);
-            atualizarVisibilidadeControlesModoJogo();
-            btnIniciarReiniciar.setText("Iniciar Novo Jogo");
+            configurarControlesParaFimDeJogo();
         } else {
-            lblStatus.setText("Vez do " + (jogo.isModoVsMaquina() && jogo.getJogadorAtual() == 2 ? "Máquina" : "Jogador " + jogo.getJogadorAtual()) + " (" + jogo.getSimboloJogadorAtual() + ")");
+            if(!isMaquinaJogando) { // Não atualiza o status se a máquina estiver "pensando"
+                lblStatus.setText("Vez do " + (jogo.isModoVsMaquina() && jogo.getJogadorAtual() == 2 ? "Máquina" : "Jogador " + jogo.getJogadorAtual()) + " (" + jogo.getSimboloJogadorAtual() + ")");
+            }
         }
+    }
+
+    private void configurarControlesParaFimDeJogo() {
+        comboBoxSimboloP1.setEnabled(true);
+        comboBoxModoJogo.setEnabled(true);
+        atualizarVisibilidadeControlesModoJogo();
+        btnIniciarReiniciar.setText("Iniciar Novo Jogo");
     }
 
     /**
      * Exibe uma caixa de diálogo mostrando o histórico de resultados das partidas da sessão atual.
-     * Se não houver partidas jogadas, informa o usuário.
-     * O histórico é apresentado em uma área de texto com rolagem.
      */
     private void mostrarHistoricoPartidas() {
         if (historicoResultadosPartidas.isEmpty()) {

@@ -1,9 +1,6 @@
-package projeto;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Random;
 
 /**
@@ -17,7 +14,8 @@ public class JogoDaVelha {
     private int quantidadeJogadas;
     private int nivelEspertezaMaquina; // 1: baixo, 2: alto
     private int jogadorAtual; // 1 para jogador 1 (ou humano), 2 para jogador 2 (ou máquina)
-    private static final String SIMBOLO_MAQUINA = "M"; // Símbolo padrão da máquina
+    // ALTERAÇÃO: Símbolo da máquina agora é "m" minúsculo, conforme o requisito.
+    private static final String SIMBOLO_MAQUINA = "m"; 
 
     /**
      * Construtor para um jogo entre dois jogadores humanos.
@@ -27,10 +25,10 @@ public class JogoDaVelha {
      * @throws IllegalArgumentException Se os símbolos forem iguais ou inválidos.
      */
     public JogoDaVelha(String simbolo1, String simbolo2) {
-        if (simbolo1 == null || simbolo1.trim().isEmpty() || simbolo1.equals(SIMBOLO_MAQUINA)) {
+        if (simbolo1 == null || simbolo1.trim().isEmpty() || simbolo1.equalsIgnoreCase(SIMBOLO_MAQUINA)) {
             throw new IllegalArgumentException("Símbolo do jogador 1 não pode ser vazio ou '" + SIMBOLO_MAQUINA + "'.");
         }
-        if (simbolo2 == null || simbolo2.trim().isEmpty() || simbolo2.equals(SIMBOLO_MAQUINA)) {
+        if (simbolo2 == null || simbolo2.trim().isEmpty() || simbolo2.equalsIgnoreCase(SIMBOLO_MAQUINA)) {
             throw new IllegalArgumentException("Símbolo do jogador 2 não pode ser vazio ou '" + SIMBOLO_MAQUINA + "'.");
         }
         if (simbolo1.equals(simbolo2)) {
@@ -50,7 +48,7 @@ public class JogoDaVelha {
      * @throws IllegalArgumentException Se o símbolo do jogador for inválido ou o nível for inválido.
      */
     public JogoDaVelha(String simboloJogador1, int nivel) {
-        if (simboloJogador1 == null || simboloJogador1.trim().isEmpty() || simboloJogador1.equals(SIMBOLO_MAQUINA)) {
+        if (simboloJogador1 == null || simboloJogador1.trim().isEmpty() || simboloJogador1.equalsIgnoreCase(SIMBOLO_MAQUINA)) {
             throw new IllegalArgumentException("Símbolo do jogador não pode ser vazio ou '" + SIMBOLO_MAQUINA + "'.");
         }
         if (nivel != 1 && nivel != 2) {
