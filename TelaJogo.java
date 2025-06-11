@@ -1,29 +1,33 @@
 package projeto;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.EventQueue;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import javax.swing.BorderFactory;
+import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.DefaultComboBoxModel;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.swing.Timer;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
-import javax.swing.BorderFactory;
-import java.awt.Font;
-import java.awt.GridLayout;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.FlowLayout;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.List;
-import java.awt.event.ActionEvent;
+import javax.swing.Timer;
 
 /**
  * Interface gráfica (GUI) do Jogo da Velha.
@@ -33,301 +37,268 @@ import java.awt.event.ActionEvent;
  */
 public class TelaJogo {
 
-    // --- ATRIBUTOS (COMPONENTES SWING E CONTROLE) --- //
+    // --- ATRIBUTOS (COMPONENTES SWING) --- //
+    private JFrame frmJogoDaVelha;
+    private JogoDaVelha jogo;
+    private JLabel[] labelsTabuleiro = new JLabel[9];
+    private JComboBox<String> comboBoxSimboloP1, comboBoxSimboloP2, comboBoxModoJogo, comboBoxNivelMaquina;
+    private JButton btnIniciarReiniciar, btnHistoricoPartidas;
+    private JLabel lblStatus, lblJogadas;
 
-    private JFrame frmJogoDaVelha; // Janela principal.
-    private JogoDaVelha jogo; // Objeto com a lógica do jogo.
-    private JLabel[] labelsTabuleiro = new JLabel[9]; // Células do tabuleiro.
-    
-    // Controles de configuração da partida.
-    private JComboBox<String> comboBoxSimboloP1;
-    private JComboBox<String> comboBoxSimboloP2;
-    private JComboBox<String> comboBoxModoJogo;
-    private JComboBox<String> comboBoxNivelMaquina;
-    
-    // Botões de ação.
-    private JButton btnIniciarReiniciar;
-    private JButton btnHistoricoPartidas;
-    
-    // Labels de informação.
-    private JLabel lblStatus; // Exibe o status atual (vez do jogador, vencedor, etc.).
-    private JLabel lblJogadas; // Exibe a contagem de jogadas.
-
-    // Controle de estado da UI.
-    private List<String> historicoResultadosPartidas = new ArrayList<>(); // Armazena resultados da sessão.
-    private boolean isMaquinaJogando = false; // Flag para bloquear input do usuário.
+    // --- CONTROLE DE ESTADO DA UI --- //
+    private List<PartidaCompleta> historicoDePartidas = new ArrayList<>();
+    private boolean isMaquinaJogando = false;
+    private boolean modoVsMaquina = false;
+    private int jogadorAtual = 1;
+    private int totalJogadas = 0;
 
     /**
-     * Ponto de entrada da aplicação.
-     * @param args Argumentos da linha de comando (não utilizados).
+     * Classe interna para armazenar os detalhes de uma partida finalizada.
      */
+    private static class PartidaCompleta {
+        private final String resultado;
+        private final LinkedHashMap<Integer, String> jogadas;
+        private static int proximoId = 1;
+        private final int id;
+
+        PartidaCompleta(String resultado, LinkedHashMap<Integer, String> jogadas) {
+            this.id = proximoId++;
+            this.resultado = resultado;
+            this.jogadas = jogadas;
+        }
+
+        public LinkedHashMap<Integer, String> getJogadas() {
+            return jogadas;
+        }
+
+        @Override
+        public String toString() {
+            return "Partida " + id + ": " + resultado;
+        }
+    }
+
     public static void main(String[] args) {
-        // Garante que a UI seja construída na thread de eventos do Swing.
-        EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                try {
-                    TelaJogo window = new TelaJogo();
-                    window.frmJogoDaVelha.setVisible(true);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+        EventQueue.invokeLater(() -> {
+            try {
+                TelaJogo window = new TelaJogo();
+                window.frmJogoDaVelha.setVisible(true);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         });
     }
 
-    /**
-     * Construtor. Inicia a criação da UI.
-     */
     public TelaJogo() {
-        initialize(); // Monta os componentes.
-        configurarEstadoInicialControles(); // Define o estado inicial da tela.
+        initialize();
+        configurarEstadoInicialControles();
     }
 
-    /**
-     * Cria e organiza todos os componentes visuais na janela.
-     */
     private void initialize() {
-        // Configuração da janela principal.
-        frmJogoDaVelha = new JFrame();
-        frmJogoDaVelha.setTitle("Jogo da Velha");
+        frmJogoDaVelha = new JFrame("Jogo da Velha");
         frmJogoDaVelha.setBounds(100, 100, 628, 600);
         frmJogoDaVelha.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frmJogoDaVelha.getContentPane().setLayout(new BorderLayout(10, 10));
 
-        // Painel superior para os controles de configuração.
         JPanel painelControles = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        comboBoxSimboloP1 = new JComboBox<>(new String[]{"X", "O"});
         painelControles.add(new JLabel("P1:"));
+        comboBoxSimboloP1 = new JComboBox<>(new String[]{"X", "O"});
         painelControles.add(comboBoxSimboloP1);
-
-        comboBoxSimboloP2 = new JComboBox<>(new String[]{"O", "X"});
         painelControles.add(new JLabel("P2:"));
+        comboBoxSimboloP2 = new JComboBox<>(new String[]{"O", "X"});
         painelControles.add(comboBoxSimboloP2);
-        
-        comboBoxModoJogo = new JComboBox<>(new String[]{"Jogador vs Jogador", "Jogador vs Máquina"});
-        comboBoxModoJogo.addActionListener(e -> atualizarVisibilidadeControlesModoJogo()); // Listener para alterar a UI.
         painelControles.add(new JLabel("Modo:"));
+        comboBoxModoJogo = new JComboBox<>(new String[]{"Jogador vs Jogador", "Jogador vs Máquina"});
+        comboBoxModoJogo.addActionListener(e -> atualizarVisibilidadeControlesModoJogo());
         painelControles.add(comboBoxModoJogo);
-
-        comboBoxNivelMaquina = new JComboBox<>(new String[]{"Fácil (1)", "Difícil (2)"});
         painelControles.add(new JLabel("Nível:"));
+        comboBoxNivelMaquina = new JComboBox<>(new String[]{"Fácil (1)", "Difícil (2)"});
         painelControles.add(comboBoxNivelMaquina);
-        
         frmJogoDaVelha.getContentPane().add(painelControles, BorderLayout.NORTH);
 
-        // Painel central para o tabuleiro 3x3.
         JPanel painelTabuleiro = new JPanel(new GridLayout(3, 3, 5, 5));
-        // Laço para criar as 9 células do tabuleiro.
         for (int i = 0; i < 9; i++) {
             labelsTabuleiro[i] = new JLabel("", SwingConstants.CENTER);
             labelsTabuleiro[i].setFont(new Font("Arial", Font.BOLD, 40));
             labelsTabuleiro[i].setOpaque(true);
             labelsTabuleiro[i].setBackground(Color.WHITE);
             labelsTabuleiro[i].setBorder(BorderFactory.createLineBorder(Color.GRAY));
-            
-            final int posicao = i; // Variável final para uso no listener.
-            // Adiciona um listener de clique a cada célula.
+            final int posicao = i;
             labelsTabuleiro[i].addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    labelTabuleiroClicado(posicao); // Trata a jogada.
+                    labelTabuleiroClicado(posicao);
                 }
             });
             painelTabuleiro.add(labelsTabuleiro[i]);
         }
         frmJogoDaVelha.getContentPane().add(painelTabuleiro, BorderLayout.CENTER);
 
-        // Painel inferior para status e botões de ação.
-        JPanel painelStatusAcoes = new JPanel(new BorderLayout(10,10));
+        JPanel painelStatusAcoes = new JPanel(new BorderLayout(10, 10));
         JPanel painelInfo = new JPanel(new FlowLayout(FlowLayout.CENTER));
         lblStatus = new JLabel("Configure o jogo e clique em Iniciar.");
         lblStatus.setFont(new Font("Tahoma", Font.PLAIN, 14));
         painelInfo.add(lblStatus);
-
         lblJogadas = new JLabel("Jogadas: 0");
         lblJogadas.setFont(new Font("Tahoma", Font.PLAIN, 12));
         painelInfo.add(lblJogadas);
-
         painelStatusAcoes.add(painelInfo, BorderLayout.NORTH);
-        
         JPanel painelBotoesAcao = new JPanel(new FlowLayout(FlowLayout.CENTER));
         btnIniciarReiniciar = new JButton("Iniciar Jogo");
         btnIniciarReiniciar.setFont(new Font("Tahoma", Font.BOLD, 14));
         btnIniciarReiniciar.addActionListener(e -> acaoIniciarReiniciarJogo());
         painelBotoesAcao.add(btnIniciarReiniciar);
-
         btnHistoricoPartidas = new JButton("Histórico de Partidas");
         btnHistoricoPartidas.setFont(new Font("Tahoma", Font.PLAIN, 12));
         btnHistoricoPartidas.addActionListener(e -> mostrarHistoricoPartidas());
+        
+        // --- ALTERAÇÃO AQUI: Botão de histórico começa desabilitado ---
+        btnHistoricoPartidas.setEnabled(false);
+        
         painelBotoesAcao.add(btnHistoricoPartidas);
-
         painelStatusAcoes.add(painelBotoesAcao, BorderLayout.SOUTH);
-
         frmJogoDaVelha.getContentPane().add(painelStatusAcoes, BorderLayout.SOUTH);
     }
 
-    // Reseta a UI para o estado pré-jogo.
     private void configurarEstadoInicialControles() {
-        // Limpa o tabuleiro visualmente.
-        for (JLabel lbl : labelsTabuleiro) {
-            lbl.setText("");
-            lbl.setBackground(Color.WHITE);
-        }
-        // Libera os controles de configuração.
+        limparTabuleiroVisual();
         comboBoxSimboloP1.setEnabled(true);
         comboBoxModoJogo.setEnabled(true);
         atualizarVisibilidadeControlesModoJogo();
         btnIniciarReiniciar.setText("Iniciar Jogo");
         lblStatus.setText("Configure o jogo e clique em Iniciar.");
         lblJogadas.setText("Jogadas: 0");
+        jogo = null;
     }
 
-    // Habilita/desabilita controles com base no modo de jogo selecionado.
     private void atualizarVisibilidadeControlesModoJogo() {
-        String modoSelecionado = (String) comboBoxModoJogo.getSelectedItem();
-        boolean modoVsJogador = "Jogador vs Jogador".equals(modoSelecionado);
-        
-        comboBoxSimboloP2.setEnabled(modoVsJogador);
-        comboBoxNivelMaquina.setEnabled(!modoVsJogador);
+        boolean vsJogador = "Jogador vs Jogador".equals(comboBoxModoJogo.getSelectedItem());
+        comboBoxSimboloP2.setEnabled(vsJogador);
+        comboBoxNivelMaquina.setEnabled(!vsJogador);
     }
-    
-    // Ação do botão "Iniciar Jogo" / "Reiniciar Jogo".
+
     private void acaoIniciarReiniciarJogo() {
         try {
-            // Lê as configurações da UI.
             String simboloP1 = (String) comboBoxSimboloP1.getSelectedItem();
             String modoSelecionado = (String) comboBoxModoJogo.getSelectedItem();
-            
-            // Cria a instância de JogoDaVelha de acordo com o modo.
-            if ("Jogador vs Máquina".equals(modoSelecionado)) {
-                String nivelSelecionado = (String) comboBoxNivelMaquina.getSelectedItem();
-                int nivelMaquina = "Difícil (2)".equals(nivelSelecionado) ? 2 : 1;
-                jogo = new JogoDaVelha(simboloP1, nivelMaquina);
-            } else { // Jogador vs Jogador
+            this.modoVsMaquina = "Jogador vs Máquina".equals(modoSelecionado);
+
+            if (modoVsMaquina) {
+                int nivel = "Difícil (2)".equals(comboBoxNivelMaquina.getSelectedItem()) ? 2 : 1;
+                jogo = new JogoDaVelha(simboloP1, nivel);
+            } else {
                 String simboloP2 = (String) comboBoxSimboloP2.getSelectedItem();
-                // Validação de símbolos.
-                if (simboloP1.equals(simboloP2)) {
-                    JOptionPane.showMessageDialog(frmJogoDaVelha, "Jogador 1 e Jogador 2 não podem ter o mesmo símbolo!", "Erro de Configuração", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
                 jogo = new JogoDaVelha(simboloP1, simboloP2);
             }
-
-            // Prepara a UI para a partida.
             configurarParaJogoEmAndamento();
-            atualizarInterface();
-
         } catch (IllegalArgumentException ex) {
             JOptionPane.showMessageDialog(frmJogoDaVelha, ex.getMessage(), "Erro de Configuração", JOptionPane.ERROR_MESSAGE);
-            jogo = null;
             configurarEstadoInicialControles();
         }
     }
 
-    // "Trava" os controles de configuração durante uma partida.
     private void configurarParaJogoEmAndamento() {
-        for (JLabel lbl : labelsTabuleiro) {
-            lbl.setText(""); // Limpa o tabuleiro.
-        }
-        // Desabilita os menus.
+        limparTabuleiroVisual();
+        this.jogadorAtual = 1;
+        this.totalJogadas = 0;
         comboBoxSimboloP1.setEnabled(false);
         comboBoxSimboloP2.setEnabled(false);
         comboBoxModoJogo.setEnabled(false);
         comboBoxNivelMaquina.setEnabled(false);
         btnIniciarReiniciar.setText("Reiniciar Jogo");
+        atualizarInterface();
     }
 
-    /**
-     * Trata o clique do usuário em uma célula do tabuleiro.
-     * @param posicao Posição clicada (0-8).
-     */
+    private void limparTabuleiroVisual() {
+        for (JLabel lbl : labelsTabuleiro) {
+            lbl.setText("");
+            lbl.setBackground(Color.WHITE);
+        }
+    }
+
     private void labelTabuleiroClicado(int posicao) {
-        // Impede a jogada se o jogo não estiver ativo.
         if (jogo == null || jogo.terminou() || isMaquinaJogando || !labelsTabuleiro[posicao].getText().isEmpty()) {
             return;
         }
 
         try {
-            // Envia a jogada para a classe de lógica.
-            jogo.jogaJogador(jogo.getJogadorAtual(), posicao);
-            // Atualiza a tela para refletir a jogada.
+            jogo.jogaJogador(this.jogadorAtual, posicao);
+            this.totalJogadas++;
+            this.jogadorAtual = (this.jogadorAtual == 1) ? 2 : 1;
             atualizarInterface();
 
-            // Se for a vez da máquina, chama sua jogada.
-            if (!jogo.terminou() && jogo.isModoVsMaquina() && jogo.getJogadorAtual() == 2) {
+            if (!jogo.terminou() && modoVsMaquina && this.jogadorAtual == 2) {
                 fazerJogadaMaquina();
             }
-
-        } catch (IllegalStateException | IllegalArgumentException ex) {
-            // Exibe aviso de jogada inválida (ex: célula ocupada).
-            // JOptionPane.showMessageDialog(frmJogoDaVelha, ex.getMessage(), "Jogada Inválida", JOptionPane.WARNING_MESSAGE);
+        } catch (Exception ex) {
+            // A lógica de validação na classe JogoDaVelha já impede a maioria dos erros.
         }
     }
-    
-    // Controla a jogada da máquina com um delay para simular "pensamento".
-    private void fazerJogadaMaquina() {
-        if (jogo == null || jogo.terminou() || !jogo.isModoVsMaquina() || jogo.getJogadorAtual() != 2) {
-            return;
-        }
 
-        isMaquinaJogando = true; // Bloqueia input do usuário.
+    private void fazerJogadaMaquina() {
+        isMaquinaJogando = true;
         lblStatus.setText("Máquina (" + jogo.getSimbolo(2) + ") está pensando...");
-        
-        // Timer para criar um atraso de 1 segundo.
+
         Timer timer = new Timer(1000, e -> {
             try {
-                jogo.jogaMaquina(); // Lógica da jogada da máquina.
+                jogo.jogaMaquina();
+                this.totalJogadas++;
+                this.jogadorAtual = 1;
             } finally {
-                isMaquinaJogando = false; // Desbloqueia input.
-                atualizarInterface(); // Atualiza a tela.
+                isMaquinaJogando = false;
+                atualizarInterface();
             }
         });
         timer.setRepeats(false);
         timer.start();
     }
 
-    /**
-     * Sincroniza a UI com o estado atual do objeto 'jogo'.
-     * Chamado após cada evento importante (jogada, início, fim).
-     */
     private void atualizarInterface() {
-        if (jogo == null) {
-            return;
+        if (jogo == null) return;
+        
+        String foto = jogo.getFoto();
+        String[] linhas = foto.split("\n-----\n");
+        String[] celulas = new String[9];
+        int k = 0;
+        for (String linha : linhas) {
+            String[] partes = linha.split(" \\| ");
+            for (String parte : partes) {
+                if (k < celulas.length) {
+                    celulas[k++] = parte.trim();
+                }
+            }
         }
-
-        // Atualiza o texto de cada célula do tabuleiro.
-        String[] celulas = jogo.getCelulas();
         for (int i = 0; i < 9; i++) {
             labelsTabuleiro[i].setText(celulas[i]);
         }
 
-        // Atualiza o contador de jogadas.
-        lblJogadas.setText("Jogadas: " + jogo.getQuantidadeJogadas());
+        lblJogadas.setText("Jogadas: " + this.totalJogadas);
 
-        // Verifica se o jogo terminou.
         if (jogo.terminou()) {
-            // Se sim, exibe o resultado final.
-            String statusFinal = "";
+            String statusFinal;
             int resultado = jogo.getResultado();
             if (resultado == 0) {
                 statusFinal = "Empate!";
-            } else if (resultado == 1) {
-                statusFinal = "Jogador " + jogo.getSimbolo(1) + " venceu!";
-            } else if (resultado == 2) {
-                statusFinal = ((jogo.isModoVsMaquina()) ? "Máquina " : "Jogador ") + jogo.getSimbolo(2) + " venceu!";
+            } else {
+                String simboloVencedor = jogo.getSimbolo(resultado);
+                String nomeVencedor = (modoVsMaquina && resultado == 2) ? "Máquina" : "Jogador " + resultado;
+                statusFinal = nomeVencedor + " (" + simboloVencedor + ") venceu!";
             }
             lblStatus.setText(statusFinal);
-            historicoResultadosPartidas.add(statusFinal + " (Jogadas: " + jogo.getQuantidadeJogadas() + ")");
-            configurarControlesParaFimDeJogo();
-        } else {
-            // Se não, exibe de quem é a vez.
-            if(!isMaquinaJogando) {
-                lblStatus.setText("Vez do " + (jogo.isModoVsMaquina() && jogo.getJogadorAtual() == 2 ? "Máquina" : "Jogador " + jogo.getJogadorAtual()) + " (" + jogo.getSimboloJogadorAtual() + ")");
+            
+            historicoDePartidas.add(new PartidaCompleta(statusFinal + " em " + this.totalJogadas + " jogadas", jogo.getHistorico()));
+            
+            // --- ALTERAÇÃO AQUI: Habilita o botão de histórico após a primeira partida ---
+            if (!btnHistoricoPartidas.isEnabled()) {
+                btnHistoricoPartidas.setEnabled(true);
             }
+            
+            configurarControlesParaFimDeJogo();
+        } else if (!isMaquinaJogando) {
+            String nomeJogador = (modoVsMaquina && jogadorAtual == 2) ? "Máquina" : "Jogador " + jogadorAtual;
+            lblStatus.setText("Vez do " + nomeJogador + " (" + jogo.getSimbolo(jogadorAtual) + ")");
         }
     }
-    
-    // Libera os controles para que um novo jogo possa ser iniciado.
+
     private void configurarControlesParaFimDeJogo() {
         comboBoxSimboloP1.setEnabled(true);
         comboBoxModoJogo.setEnabled(true);
@@ -335,29 +306,78 @@ public class TelaJogo {
         btnIniciarReiniciar.setText("Iniciar Novo Jogo");
     }
 
-    /**
-     * Exibe uma janela com o histórico de resultados da sessão.
-     */
+    // --- ALTERAÇÃO AQUI: Lógica do histórico refeita com JDialog ---
     private void mostrarHistoricoPartidas() {
-        if (historicoResultadosPartidas.isEmpty()) {
-            JOptionPane.showMessageDialog(frmJogoDaVelha, "Nenhuma partida foi jogada ainda nesta sessão.", "Histórico de Partidas", JOptionPane.INFORMATION_MESSAGE);
-            return;
+        JDialog dialogoHistorico = new JDialog(frmJogoDaVelha, "Histórico de Partidas", true);
+        dialogoHistorico.setSize(400, 300);
+        dialogoHistorico.setLocationRelativeTo(frmJogoDaVelha);
+        dialogoHistorico.setLayout(new BorderLayout(10, 10));
+
+        DefaultListModel<PartidaCompleta> listModel = new DefaultListModel<>();
+        historicoDePartidas.forEach(listModel::addElement);
+
+        JList<PartidaCompleta> listaPartidas = new JList<>(listModel);
+        listaPartidas.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JScrollPane scrollPane = new JScrollPane(listaPartidas);
+        
+        JButton btnVerJogadas = new JButton("Ver Jogadas");
+        JButton btnFechar = new JButton("Fechar");
+        
+        btnVerJogadas.setEnabled(false); // Começa desabilitado
+
+        listaPartidas.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                btnVerJogadas.setEnabled(!listaPartidas.isSelectionEmpty());
+            }
+        });
+
+        btnVerJogadas.addActionListener(e -> {
+            PartidaCompleta partidaSelecionada = listaPartidas.getSelectedValue();
+            dialogoHistorico.dispose(); // Fecha o diálogo atual antes de abrir o próximo
+            exibirDetalhesDaPartida(partidaSelecionada);
+        });
+
+        btnFechar.addActionListener(e -> dialogoHistorico.dispose());
+
+        JPanel painelBotoes = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        painelBotoes.add(btnVerJogadas);
+        painelBotoes.add(btnFechar);
+
+        dialogoHistorico.add(scrollPane, BorderLayout.CENTER);
+        dialogoHistorico.add(painelBotoes, BorderLayout.SOUTH);
+        
+        dialogoHistorico.setVisible(true);
+    }
+
+    private void exibirDetalhesDaPartida(PartidaCompleta partida) {
+        StringBuilder detalhes = new StringBuilder();
+        detalhes.append("Detalhes da ").append(partida.toString()).append("\n\n");
+        
+        int nJogada = 1;
+        for (Map.Entry<Integer, String> jogada : partida.getJogadas().entrySet()) {
+            detalhes.append("Jogada ").append(nJogada++).append(": ");
+            detalhes.append("Símbolo '").append(jogada.getValue()).append("' ");
+            detalhes.append("na Posição ").append(jogada.getKey()).append("\n");
         }
 
-        // Constrói o texto do histórico.
-        StringBuilder sb = new StringBuilder("Resultados das Partidas:\n\n");
-        for (int i = 0; i < historicoResultadosPartidas.size(); i++) {
-            sb.append((i + 1)).append(". ").append(historicoResultadosPartidas.get(i)).append("\n");
-        }
-
-        // Cria uma área de texto com rolagem para exibir o histórico.
-        JTextArea textArea = new JTextArea(sb.toString());
+        JTextArea textArea = new JTextArea(detalhes.toString());
         textArea.setEditable(false);
         textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
         JScrollPane scrollPane = new JScrollPane(textArea);
-        scrollPane.setPreferredSize(new java.awt.Dimension(350, 200));
+        scrollPane.setPreferredSize(new Dimension(350, 200));
+        
+        Object[] options = {"Voltar ao Histórico", "Fechar"};
+        int result = JOptionPane.showOptionDialog(frmJogoDaVelha, 
+                                                scrollPane, 
+                                                "Detalhes da Partida",
+                                                JOptionPane.DEFAULT_OPTION, 
+                                                JOptionPane.INFORMATION_MESSAGE,
+                                                null, 
+                                                options, 
+                                                options[1]); 
 
-        // Mostra o histórico em um JOptionPane.
-        JOptionPane.showMessageDialog(frmJogoDaVelha, scrollPane, "Histórico de Partidas", JOptionPane.PLAIN_MESSAGE);
+        if (result == 0) {
+            mostrarHistoricoPartidas(); 
+        }
     }
 }
