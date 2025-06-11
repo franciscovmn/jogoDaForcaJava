@@ -1,4 +1,3 @@
-// Francisco Viana Maia Neto - 20232370011
 package projeto;
 
 import java.util.ArrayList;
@@ -9,6 +8,8 @@ import java.util.Random;
 /**
  * Classe de lógica do Jogo da Velha.
  * Gerencia o estado do jogo, jogadas e regras.
+ * @author [Felipe Antonio Ramalho Macedo - 20232370036]
+ * @author [Francisco Viana Maia Neto - 20232370011]
  */
 public class JogoDaVelha {
 

@@ -1,4 +1,3 @@
-// Felipe Antonio Ramalho Macedo - 20232370036
 package projeto;
 
 import java.awt.EventQueue;
@@ -29,6 +28,8 @@ import java.awt.event.ActionEvent;
 /**
  * Interface gráfica (GUI) do Jogo da Velha.
  * Gerencia a interação do usuário e a exibição do jogo.
+ * @author [Felipe Antonio Ramalho Macedo - 20232370036]
+ * @author [Francisco Viana Maia Neto - 20232370011]
  */
 public class TelaJogo {
 
