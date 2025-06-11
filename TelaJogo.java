@@ -1,3 +1,5 @@
+package projeto;
+
 import java.awt.EventQueue;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -28,6 +30,7 @@ import java.awt.event.ActionEvent;
  * Esta classe gerencia a interação do usuário, a exibição do tabuleiro,
  * as configurações do jogo e o histórico de partidas.
  */
+
 public class TelaJogo {
 
     private JFrame frmJogoDaVelha;
@@ -313,7 +316,7 @@ public class TelaJogo {
             } else if (resultado == 1) {
                 statusFinal = "Jogador " + jogo.getSimbolo(1) + " venceu!";
             } else if (resultado == 2) {
-                statusFinal = ((jogo.isModoVsMaquina()) ? "Máquina" : "Jogador ") + jogo.getSimbolo(2) + " venceu!";
+                statusFinal = ((jogo.isModoVsMaquina()) ? "Máquina " : "Jogador ") + jogo.getSimbolo(2) + " venceu!";
             }
             lblStatus.setText(statusFinal);
             
