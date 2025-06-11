@@ -1,3 +1,4 @@
+// Francisco Viana Maia Neto - 20232370011
 package projeto;
 
 import java.util.ArrayList;
@@ -6,65 +7,43 @@ import java.util.LinkedHashMap;
 import java.util.Random;
 
 /**
- * Representa a lógica central e as regras do Jogo da Velha.
- * Esta classe é o "cérebro" do jogo, responsável por gerenciar o tabuleiro,
- * validar jogadas, verificar o vencedor e controlar a inteligência da máquina,
- * sem se preocupar com a interface gráfica.
+ * Classe de lógica do Jogo da Velha.
+ * Gerencia o estado do jogo, jogadas e regras.
  */
 public class JogoDaVelha {
 
-    // --- ATRIBUTOS PRINCIPAIS --- //
+    // --- ATRIBUTOS --- //
 
-    /**
-     * O tabuleiro do jogo. É um array de 9 posições que representa cada célula.
-     * Armazena o símbolo do jogador que ocupou a célula ("X", "O", "m") ou uma string vazia se estiver livre.
-     */
+    // Tabuleiro 3x3, representado por um array de 9 posições.
     private String[] celulas;
 
-    /**
-     * Armazena os símbolos dos dois jogadores. A posição 0 é do Jogador 1 e a posição 1 é do Jogador 2 (ou da máquina).
-     */
+    // Símbolos dos jogadores. [0] = P1, [1] = P2/Máquina.
     private String[] simbolos;
 
-    /**
-     * Um mapa que guarda o histórico de cada movimento na ordem em que aconteceu.
-     * A chave (Integer) é a posição da jogada (0-8) e o valor (String) é o símbolo jogado.
-     * Usamos LinkedHashMap para manter a ordem de inserção.
-     */
+    // Histórico de jogadas na ordem em que ocorreram <posição, símbolo>.
     private LinkedHashMap<Integer, String> historico;
 
-    /**
-     * Conta quantas jogadas já foram feitas na partida. Vai de 0 a 9.
-     */
+    // Contador de jogadas da partida atual (0 a 9).
     private int quantidadeJogadas;
 
-    /**
-     * Define o nível de dificuldade da máquina. 0 se não houver máquina, 1 para fácil (aleatório) e 2 para difícil (estratégico).
-     */
+    // Nível da IA da máquina (1: fácil, 2: difícil).
     private int nivelEspertezaMaquina;
 
-    /**
-     * Indica de quem é a vez de jogar. Armazena 1 para o Jogador 1 e 2 para o Jogador 2/Máquina.
-     */
+    // Indica de quem é a vez (1 ou 2).
     private int jogadorAtual;
     
-    /**
-     * Constante para o símbolo da máquina, conforme exigido no projeto.
-     */
+    // Símbolo fixo para a máquina, conforme requisito. 
     private static final String SIMBOLO_MAQUINA = "m";
 
     // --- CONSTRUTORES --- //
 
     /**
-     * Construtor para uma partida "Jogador vs. Jogador".
-     * Recebe os símbolos de cada um e inicia o jogo.
-     *
-     * @param simbolo1 Símbolo escolhido para o Jogador 1.
-     * @param simbolo2 Símbolo escolhido para o Jogador 2.
-     * @throws IllegalArgumentException se os símbolos forem iguais, vazios ou o símbolo reservado para a máquina.
+     * Construtor para modo: Jogador vs. Jogador. 
+     * @param simbolo1 Símbolo do Jogador 1.
+     * @param simbolo2 Símbolo do Jogador 2.
      */
     public JogoDaVelha(String simbolo1, String simbolo2) {
-        // Validação inicial para garantir que os símbolos são válidos e diferentes.
+        // Validação dos símbolos de entrada.
         if (simbolo1 == null || simbolo1.trim().isEmpty() || simbolo1.equalsIgnoreCase(SIMBOLO_MAQUINA)) {
             throw new IllegalArgumentException("Símbolo do jogador 1 não pode ser vazio ou '" + SIMBOLO_MAQUINA + "'.");
         }
@@ -76,16 +55,14 @@ public class JogoDaVelha {
         }
 
         this.simbolos = new String[]{simbolo1, simbolo2};
-        this.nivelEspertezaMaquina = 0; // Nível 0 indica que não há máquina no jogo.
+        this.nivelEspertezaMaquina = 0; // 0 significa que não há máquina.
         inicializarJogo();
     }
 
     /**
-     * Construtor para uma partida "Jogador vs. Máquina".
-     *
-     * @param simboloJogador1 Símbolo escolhido pelo jogador humano.
-     * @param nivel Nível de dificuldade da máquina (1 para fácil, 2 para difícil).
-     * @throws IllegalArgumentException se o símbolo do jogador ou o nível da máquina forem inválidos.
+     * Construtor para modo: Jogador vs. Máquina. 
+     * @param simboloJogador1 Símbolo do jogador humano.
+     * @param nivel Nível de dificuldade da máquina (1 ou 2). 
      */
     public JogoDaVelha(String simboloJogador1, int nivel) {
         // Validação dos parâmetros de entrada.
@@ -101,30 +78,24 @@ public class JogoDaVelha {
         inicializarJogo();
     }
     
-    // --- MÉTODOS DE CONTROLE DO JOGO --- //
+    // --- MÉTODOS DE CONTROLE --- //
 
-    /**
-     * Prepara o jogo para um novo começo.
-     * Limpa o tabuleiro, zera o histórico e contadores, e define o Jogador 1 como o primeiro a jogar.
-     */
+    // Prepara o jogo para uma nova partida.
     private void inicializarJogo() {
         this.celulas = new String[9];
-        Arrays.fill(this.celulas, ""); // Preenche todas as células com "" para indicar que estão vazias.
+        Arrays.fill(this.celulas, ""); // Limpa o tabuleiro.
         this.historico = new LinkedHashMap<>();
         this.quantidadeJogadas = 0;
-        this.jogadorAtual = 1; // O Jogador 1 sempre começa.
+        this.jogadorAtual = 1; // Jogador 1 sempre começa.
     }
     
     /**
-     * Efetiva a jogada de um jogador humano no tabuleiro.
-     *
-     * @param numeroJogador O jogador que está fazendo o movimento (1 ou 2).
-     * @param posicao A célula escolhida para a jogada (0 a 8).
-     * @throws IllegalStateException se o jogo já acabou.
-     * @throws IllegalArgumentException se a jogada for inválida (posição ocupada, fora do tabuleiro ou não for a vez do jogador).
+     * Realiza a jogada de um jogador. 
+     * @param numeroJogador Jogador que está jogando (1 ou 2).
+     * @param posicao Posição no tabuleiro (0-8).
      */
     public void jogaJogador(int numeroJogador, int posicao) {
-        // 1. Validação completa da jogada para garantir a integridade do jogo.
+        // Validações da jogada.
         if (terminou()) {
             throw new IllegalStateException("O jogo já terminou. Não é possível fazer mais jogadas.");
         }
@@ -138,24 +109,24 @@ public class JogoDaVelha {
             throw new IllegalArgumentException("Posição " + posicao + " já está ocupada.");
         }
 
-        // 2. Se a jogada é válida, ela é registrada.
+        // Efetiva a jogada.
         celulas[posicao] = getSimbolo(numeroJogador);
         historico.put(posicao, celulas[posicao]);
         quantidadeJogadas++;
         
-        // 3. Passa a vez para o próximo jogador.
+        // Passa a vez.
         jogadorAtual = (jogadorAtual == 1) ? 2 : 1;
     }
 
     /**
-     * Executa a jogada da máquina, com base no seu nível de inteligência.
+     * Realiza a jogada da máquina. 
      */
     public void jogaMaquina() {
-        // Validações para garantir que a máquina só jogue quando for a vez dela.
+        // Valida se a máquina pode jogar.
         if (nivelEspertezaMaquina == 0) {
             throw new IllegalStateException("Não há máquina neste modo de jogo.");
         }
-        if (this.jogadorAtual != 2) { // A máquina é sempre o jogador 2.
+        if (this.jogadorAtual != 2) { // Máquina é sempre o jogador 2.
             throw new IllegalStateException("Não é a vez da máquina.");
         }
         if (terminou()) {
@@ -163,121 +134,102 @@ public class JogoDaVelha {
         }
 
         int posicaoEscolhida;
-        // Se o nível for 1 (fácil), a máquina escolhe uma posição livre de forma aleatória.
-        if (nivelEspertezaMaquina == 1) {
+        // Escolhe a jogada com base no nível de dificuldade.
+        if (nivelEspertezaMaquina == 1) { // Nível Fácil: jogada aleatória.
             Random random = new Random();
             ArrayList<Integer> posicoesDisponiveis = getPosicoesDisponiveis();
             posicaoEscolhida = posicoesDisponiveis.get(random.nextInt(posicoesDisponiveis.size()));
-        } else { // Se o nível for 2 (difícil), a máquina usa uma estratégia.
+        } else { // Nível Difícil: usa estratégia.
             posicaoEscolhida = encontrarMelhorJogada();
         }
         
-        // Efetiva a jogada decidida pela máquina.
+        // Efetiva a jogada da máquina.
         celulas[posicaoEscolhida] = getSimbolo(2);
         historico.put(posicaoEscolhida, celulas[posicaoEscolhida]);
         quantidadeJogadas++;
-        jogadorAtual = 1; // Passa a vez de volta para o jogador humano.
+        jogadorAtual = 1; // Devolve a vez para o jogador humano.
     }
 
-    /**
-     * Lógica da IA "Difícil". Pensa de forma estratégica para decidir a melhor jogada.
-     * @return A posição (0-8) da melhor jogada encontrada.
-     */
+    // Lógica da IA "Difícil" para encontrar a melhor jogada.
     private int encontrarMelhorJogada() {
         ArrayList<Integer> posicoesDisponiveis = getPosicoesDisponiveis();
 
-        // Estratégia 1: Vencer o jogo.
-        // A máquina simula colocar sua peça em cada posição livre. Se uma dessas jogadas resulta em vitória, ela a escolhe.
+        // 1. Tenta ganhar: Verifica se alguma jogada leva à vitória.
         for (int pos : posicoesDisponiveis) {
-            celulas[pos] = getSimbolo(2); // Simula a jogada.
+            celulas[pos] = getSimbolo(2); // Simula jogada.
             if (verificaVencedor(getSimbolo(2))) {
-                celulas[pos] = ""; // Desfaz a simulação.
-                return pos; // Retorna a posição vencedora.
+                celulas[pos] = ""; // Desfaz simulação.
+                return pos;
             }
-            celulas[pos] = ""; // Desfaz a simulação.
+            celulas[pos] = ""; // Desfaz simulação.
         }
 
-        // Estratégia 2: Bloquear o oponente.
-        // Se não pode vencer, a máquina verifica se o jogador humano pode vencer na próxima rodada e o bloqueia.
+        // 2. Tenta bloquear: Verifica se o oponente pode ganhar e bloqueia.
         for (int pos : posicoesDisponiveis) {
-            celulas[pos] = getSimbolo(1); // Simula a jogada do oponente.
+            celulas[pos] = getSimbolo(1); // Simula jogada do oponente.
             if (verificaVencedor(getSimbolo(1))) {
-                celulas[pos] = ""; // Desfaz a simulação.
-                return pos; // Retorna a posição para bloquear.
+                celulas[pos] = ""; // Desfaz simulação.
+                return pos;
             }
-            celulas[pos] = ""; // Desfaz a simulação.
+            celulas[pos] = ""; // Desfaz simulação.
         }
         
-        // Estratégia 3: Ocupar o centro.
-        // A posição central (4) é a mais estratégica. Se estiver livre, é uma boa escolha.
+        // 3. Ocupa o centro (posição 4), se estiver livre.
         if (celulas[4].isEmpty()) {
             return 4;
         }
 
-        // Estratégia 4: Ocupar um canto.
-        // Os cantos (0, 2, 6, 8) são as próximas melhores posições. Escolhe um canto livre aleatoriamente.
+        // 4. Ocupa um dos cantos (0, 2, 6, 8), se estiverem livres.
         ArrayList<Integer> cantos = new ArrayList<>(Arrays.asList(0, 2, 6, 8));
-        cantos.retainAll(posicoesDisponiveis); // Filtra para manter apenas os cantos disponíveis.
+        cantos.retainAll(posicoesDisponiveis);
         if (!cantos.isEmpty()) {
             Random random = new Random();
             return cantos.get(random.nextInt(cantos.size()));
         }
         
-        // Estratégia 5: Jogada aleatória (último recurso).
-        // Se nenhuma das estratégias acima se aplicar, joga em qualquer lugar livre.
+        // 5. Último recurso: joga em qualquer posição livre.
         Random random = new Random();
         return posicoesDisponiveis.get(random.nextInt(posicoesDisponiveis.size()));
     }
 
-
     /**
-     * Verifica se a partida terminou, seja por vitória de um jogador ou por empate.
+     * Verifica se o jogo terminou (vitória ou empate). 
      * @return true se o jogo acabou, false caso contrário.
      */
     public boolean terminou() {
-        // O jogo termina se o Jogador 1 venceu, OU se o Jogador 2 venceu, OU se não há mais espaços livres (empate).
         return verificaVencedor(simbolos[0]) || verificaVencedor(simbolos[1]) || quantidadeJogadas == 9;
     }
 
-    /**
-     * Algoritmo que confere todas as 8 combinações de vitória possíveis para um dado símbolo.
-     * @param simbolo O símbolo a ser verificado ("X", "O" ou "m").
-     * @return true se o símbolo formou uma linha vencedora, false caso contrário.
-     */
+    // Confere as 8 combinações de vitória para um símbolo.
     private boolean verificaVencedor(String simbolo) {
-        // Checa as 3 linhas horizontais
+        // Linhas
         if (celulas[0].equals(simbolo) && celulas[1].equals(simbolo) && celulas[2].equals(simbolo)) return true;
         if (celulas[3].equals(simbolo) && celulas[4].equals(simbolo) && celulas[5].equals(simbolo)) return true;
         if (celulas[6].equals(simbolo) && celulas[7].equals(simbolo) && celulas[8].equals(simbolo)) return true;
-        // Checa as 3 colunas verticais
+        // Colunas
         if (celulas[0].equals(simbolo) && celulas[3].equals(simbolo) && celulas[6].equals(simbolo)) return true;
         if (celulas[1].equals(simbolo) && celulas[4].equals(simbolo) && celulas[7].equals(simbolo)) return true;
         if (celulas[2].equals(simbolo) && celulas[5].equals(simbolo) && celulas[8].equals(simbolo)) return true;
-        // Checa as 2 diagonais
+        // Diagonais
         if (celulas[0].equals(simbolo) && celulas[4].equals(simbolo) && celulas[8].equals(simbolo)) return true;
         if (celulas[2].equals(simbolo) && celulas[4].equals(simbolo) && celulas[6].equals(simbolo)) return true;
-        
-        return false; // Nenhuma condição de vitória foi atendida.
+        return false;
     }
 
-    // --- MÉTODOS GETTERS (para a interface gráfica usar) --- //
+    // --- GETTERS --- //
 
     /**
-     * Informa o status final da partida.
-     * @return 1 se o Jogador 1 venceu, 2 se o Jogador 2/Máquina venceu, 0 se foi empate, ou -1 se o jogo ainda está em andamento.
+     * Retorna o resultado da partida. 
+     * @return 1 (vitória P1), 2 (vitória P2/máquina), 0 (empate), -1 (em andamento).
      */
     public int getResultado() {
         if (verificaVencedor(simbolos[0])) return 1;
         if (verificaVencedor(simbolos[1])) return 2;
         if (quantidadeJogadas == 9) return 0;
-        return -1; // Jogo não terminou.
+        return -1;
     }
 
-    /**
-     * Retorna o símbolo de um jogador específico.
-     * @param numeroJogador 1 para o Jogador 1, 2 para o Jogador 2/Máquina.
-     * @return O símbolo (String) do jogador.
-     */
+    // Retorna o símbolo de um jogador.
     public String getSimbolo(int numeroJogador) {
         if (numeroJogador != 1 && numeroJogador != 2) {
             throw new IllegalArgumentException("Número do jogador deve ser 1 ou 2.");
@@ -285,11 +237,7 @@ public class JogoDaVelha {
         return simbolos[numeroJogador - 1];
     }
     
-    /**
-     * Gera uma representação visual do tabuleiro em formato de texto.
-     * Útil para debug ou para uma interface de console.
-     * @return Uma String formatada em 3x3 que mostra o estado atual do tabuleiro.
-     */
+    // Retorna uma string formatada do tabuleiro (para debug/console)
     public String getFoto() {
         StringBuilder foto = new StringBuilder();
         for (int i = 0; i < 9; i++) {
@@ -303,10 +251,7 @@ public class JogoDaVelha {
         return foto.toString();
     }
     
-    /**
-     * Retorna uma lista com todas as posições do tabuleiro que ainda estão livres.
-     * @return um ArrayList de Integers, onde cada inteiro é o índice de uma célula vazia.
-     */
+    // Retorna uma lista de posições ainda não ocupadas.
     public ArrayList<Integer> getPosicoesDisponiveis() {
         ArrayList<Integer> disponiveis = new ArrayList<>();
         for (int i = 0; i < celulas.length; i++) {
@@ -317,45 +262,32 @@ public class JogoDaVelha {
         return disponiveis;
     }
 
-    /**
-     * Retorna uma cópia do histórico de jogadas.
-     * @return Um LinkedHashMap contendo os pares <posição, símbolo> de todas as jogadas.
-     */
+    // Retorna uma cópia do histórico de jogadas.
     public LinkedHashMap<Integer, String> getHistorico() {
-        return new LinkedHashMap<>(historico); // Retorna uma cópia para evitar modificação externa.
+        return new LinkedHashMap<>(historico);
     }
 
-    /**
-     * Retorna a quantidade de jogadas realizadas.
-     */
+    // Retorna o total de jogadas.
     public int getQuantidadeJogadas() {
         return quantidadeJogadas;
     }
 
-    /**
-     * Retorna o número do jogador da vez (1 ou 2).
-     */
+    // Retorna o jogador da vez.
     public int getJogadorAtual() {
         return jogadorAtual;
     }
     
-    /**
-     * Retorna o símbolo do jogador da vez.
-     */
+    // Retorna o símbolo do jogador da vez.
     public String getSimboloJogadorAtual() {
         return getSimbolo(this.jogadorAtual);
     }
 
-    /**
-     * Retorna uma cópia segura do array de células do tabuleiro.
-     */
+    // Retorna uma cópia do array de células.
     public String[] getCelulas() {
         return Arrays.copyOf(celulas, celulas.length);
     }
     
-    /**
-     * Informa se o modo de jogo atual é contra a máquina.
-     */
+    // Verifica se o modo de jogo é contra a máquina.
     public boolean isModoVsMaquina() {
         return nivelEspertezaMaquina > 0;
     }
